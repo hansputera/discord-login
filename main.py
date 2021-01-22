@@ -63,6 +63,7 @@ def callbackAuth():
 
 		access_token = response.json()['access_token']
 		session['access_token'] = access_token
+		session['refresh_token'] = response.json()['refresh_token']
 
 		return redirect("/")
 
@@ -86,7 +87,19 @@ def logout():
 	if sessionToken == None:
 		return jsonify({"success": False, "message": "You never login to the website"})
 	else:
-		session.clear()
-		return jsonify({"success": True, "message": "Logout!"})
+		response = requests.post(f"{discordConfig['api']}/oauth2/token/revoke", headers={
+			"Content-Type": "application/x-www-form-urlencoded"
+		}, data={
+			"token": sessionToken
+		}, auth=(config['client_id'], config['client_secret']))
+
+		if response.reason != "OK":
+			return jsonify({ "success": False, "message": response.reason, "result": response.json()})
+		else:
+			# Session clear
+			session.clear()
+			return jsonify({"success": True, "message": "Logout!"})
+
+
 if __name__ == "__main__":
 	app.run(host="0.0.0.0", port=2392)
